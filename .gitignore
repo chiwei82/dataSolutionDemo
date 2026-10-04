@@ -6,4 +6,5 @@ logs/
 dbt_internal_packages/
 *claude*
 *keys/
-*.*
+.synthetic_trading/
+.DS*
