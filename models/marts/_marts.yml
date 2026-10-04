@@ -1,0 +1,70 @@
+models:
+  - name: dim_users
+    columns:
+      - name: user_id
+        data_tests:
+          - unique
+          - not_null
+      - name: login
+      - name: platform
+      - name: country_code
+      - name: city
+      - name: region
+        data_tests:
+          - not_null
+      - name: created_at
+
+  - name: fct_swapfee
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "closed_at > opened_at"
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
+      - name: login
+      - name: product
+      - name: category
+      - name: platform
+      - name: opened_at
+      - name: closed_at
+      - name: eod_count
+        data_tests:
+          - not_null
+      - name: fee_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['admin', 'swap']
+
+unit_tests:
+  - name: test_fct_swapfee_eod_count_and_fee_type
+    description: EODs skip weekends and Christmas, same-day orders have none, and Muslim_Majority_Europe users get the admin fee type.
+    model: fct_swapfee
+    given:
+      - input: ref('stg_order')
+        rows:
+          - {order_id: 1, user_id: 1, product: EURUSD, category: FX, opened_at: "2024-12-20 10:00:00", closed_at: "2024-12-23 10:00:00"}
+          - {order_id: 2, user_id: 1, product: EURUSD, category: FX, opened_at: "2024-12-23 10:00:00", closed_at: "2024-12-26 10:00:00"}
+          - {order_id: 3, user_id: 2, product: Apple, category: Equities, opened_at: "2024-12-16 09:00:00", closed_at: "2024-12-16 15:00:00"}
+          - {order_id: 4, user_id: 2, product: Apple, category: Equities, opened_at: "2024-12-16 09:00:00", closed_at: "2024-12-19 09:00:00"}
+      - input: ref('dim_users')
+        rows:
+          - {user_id: 1, login: 11111111, platform: mt4, region: Western_Europe}
+          - {user_id: 2, login: 22222222, platform: mt5, region: Muslim_Majority_Europe}
+    expect:
+      rows:
+        - {order_id: 1, eod_count: 1, fee_type: swap}
+        - {order_id: 2, eod_count: 2, fee_type: swap}
+        - {order_id: 3, eod_count: 0, fee_type: admin}
+        - {order_id: 4, eod_count: 3, fee_type: admin}

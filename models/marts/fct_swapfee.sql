@@ -1,28 +1,24 @@
 with orders as (
 
-    select * from {{ ref('_stg_order') }}
+    select * from {{ ref('stg_order') }}
 
 ),
 
 users as (
 
-    select * from {{ ref('_stg_user') }}
+    select * from {{ ref('dim_users') }}
 
 ),
 
-country_region as (
-
-    select * from {{ ref('country_region') }}
-
-),
-
-order_positions as (
+order_eods as (
 
     select
         order_id,
         user_id,
         product,
         category,
+        opened_at,
+        closed_at,
         (
             select count(*)
             from unnest(
@@ -40,20 +36,20 @@ order_positions as (
 )
 
 select
-    order_positions.order_id,
-    order_positions.user_id,
+    order_eods.order_id,
+    order_eods.user_id,
     users.login,
-    order_positions.product,
-    order_positions.category,
+    order_eods.product,
+    order_eods.category,
     users.platform,
-    order_positions.eod_count,
+    order_eods.opened_at,
+    order_eods.closed_at,
+    order_eods.eod_count,
     case
-        when country_region.region = 'Muslim_Majority_Europe' then 'admin'
+        when users.region = 'Muslim_Majority_Europe' then 'admin'
         else 'swap'
     end as fee_type
 
-from order_positions
+from order_eods
 left join users
-    on order_positions.user_id = users.user_id
-left join country_region
-    on users.country_code = country_region.country_code
+    on order_eods.user_id = users.user_id

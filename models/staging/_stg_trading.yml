@@ -1,0 +1,57 @@
+models:
+  - name: stg_order
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_user')
+                field: user_id
+      - name: product
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('product_category')
+                field: product
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['FX', 'XAU', 'XAG', 'Crude', 'Equities', 'Index', 'Cmdty']
+      - name: opened_at
+        data_tests:
+          - not_null
+      - name: closed_at
+        data_tests:
+          - not_null
+      - name: _etl_loaded_at
+
+  - name: stg_user
+    columns:
+      - name: user_id
+        data_tests:
+          - unique
+          - not_null
+      - name: login
+        data_tests:
+          - unique
+          - not_null
+      - name: platform
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['mt4', 'mt5']
+      - name: country_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('country_region')
+                field: country_code
+      - name: created_at

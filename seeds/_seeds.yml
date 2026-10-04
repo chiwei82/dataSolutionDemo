@@ -1,0 +1,35 @@
+seeds:
+  - name: country_region
+    config:
+      column_types:
+        country_code: string
+        city: string
+        region: string
+    columns:
+      - name: country_code
+        data_tests:
+          - unique
+          - not_null
+      - name: city
+      - name: region
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Western_Europe', 'Eastern_Europe', 'Muslim_Majority_Europe']
+
+  - name: product_category
+    config:
+      column_types:
+        product: string
+        product_display_name: string
+        category: string
+    columns:
+      - name: product
+        data_tests:
+          - unique
+          - not_null
+      - name: product_display_name
+      - name: category
+        data_tests:
+          - not_null
