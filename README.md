@@ -159,6 +159,14 @@ The source tables are not public and the data generator is not in this repo, so 
    dbt docs generate
    ```
 
+## How I work with AI Agent
+
+I built this project with an AI coding assistant (Claude Code). 
+I followed the ethos of human-in-the-loop (HITL): I defined the problem and made the key decisions; the assistant wrote most of the code and proposed implementation details, which I reviewed, questioned or changed.
+
+- **What I focused on:** defining the data (table schemas, value domains, product and region lookups), the business rules (what counts as an EOD, who gets an admin fee), project structure, cloud setup (BigQuery, service accounts, GitHub secrets and Pages), and how the work is split into commits.
+- **How I check the AI's work:** I run the commands myself and paste the real output back instead of trusting a summary; I push back when an answer contradicts what I see (for example, when it claimed a key file could not be found); I decide what goes into each commit, and I ask AI to show the original sources behind every steps so I can verify them myself.
+
 ## Resources
 
 - [dbt documentation](https://docs.getdbt.com/docs/introduction)
