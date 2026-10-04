@@ -1,0 +1,7 @@
+sources:
+  - name: trading
+    database: projectfeecalcu
+    schema: main
+    tables:
+      - name: users
+      - name: orders

@@ -1,0 +1,30 @@
+product,product_display_name,category
+EURUSD,EUR/USD,FX
+GBPUSD,GBP/USD,FX
+USDJPY,USD/JPY,FX
+AUDUSD,AUD/USD,FX
+USDCAD,USD/CAD,FX
+USDCHF,USD/CHF,FX
+NZDUSD,NZD/USD,FX
+EURGBP,EUR/GBP,FX
+EURJPY,EUR/JPY,FX
+XAUUSD,XAU/USD,XAU
+XAGUSD,XAG/USD,XAG
+WTI Crude Oil,WTI Crude Oil,Crude
+Brent Crude Oil,Brent Crude Oil,Crude
+Apple,Apple,Equities
+Microsoft,Microsoft,Equities
+NVIDIA,NVIDIA,Equities
+Amazon,Amazon,Equities
+Tesla,Tesla,Equities
+Meta,Meta,Equities
+Alphabet,Alphabet,Equities
+S&P 500,S&P 500,Index
+Nasdaq 100,Nasdaq 100,Index
+Dow Jones 30,Dow Jones 30,Index
+FTSE 100,FTSE 100,Index
+DAX 40,DAX 40,Index
+CAC 40,CAC 40,Index
+Nikkei 225,Nikkei 225,Index
+Hang Seng Index,Hang Seng Index,Index
+Natural Gas,Natural Gas,Cmdty
