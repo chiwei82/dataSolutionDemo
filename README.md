@@ -1,12 +1,23 @@
 # Swap Fee Data Product (dbt + BigQuery)
 
-A dbt demo project that models synthetic trading data into a data product for the finance team: for every order, how many end-of-day (EOD) rollovers it was held through, and whether it is charged a **swap** or an **admin** fee.
+A personal analytics engineering project, modelled on a broker's finance use case and built on synthetic data. It turns raw trading data into a tested, documented data product that answers two questions for every order: **how many end-of-day (EOD) rollovers the position was held through**, and **whether it is charged a swap fee or an admin fee** (swap-free accounts).
 
-Built with **dbt Fusion 2.0** on **Google BigQuery**.
+**Tech stack:** SQL · dbt (Fusion 2.0) · Google BigQuery (GCP) · dbt_utils · Git / GitHub · Python (synthetic data generation, not included in this repo)
+
+## The problem
+
+Overnight fees depend on trading-calendar rules that are easy to get wrong in ad-hoc SQL: weekends and market holidays (Christmas) have no rollover, and clients in some regions hold swap-free accounts that are charged an admin fee instead. This project centralises those rules in one version-controlled, tested dbt model that downstream reporting could read as a single source of truth.
+
+## Highlights
+
+- **Data modelling:** layered staging → marts architecture with a fact table (`fct_swapfee`) and a dimension table (`dim_users`) on a cloud data warehouse, built over **20,000 synthetic orders** and **1,000 synthetic users** across **29 products** and **34 cities**.
+- **Automated testing and data quality:** **36 data tests and 1 unit test** in total (generic, `dbt_utils`, singular SQL and unit tests), covering primary keys, referential integrity, accepted values and the EOD business rules. `dbt build` runs the full pipeline and every test in under a minute.
+- **Business logic as code:** the EOD calendar rules (weekends, Christmas, same-day orders) are pinned down by a unit test with hand-built edge cases, so a logic change that breaks them makes `dbt build` fail before `fct_swapfee` is rebuilt.
+- **Documentation and maintainability:** every model, column and seed is documented; shared definitions live in reusable doc blocks; reference data (country → region, product → category) is managed as dbt seeds instead of being hard-coded in SQL.
 
 ## Data
 
-The raw data is synthetic and lives in BigQuery:
+All data is synthetic, generated with a Python script (kept outside this repo) and loaded into BigQuery:
 
 | Table | Columns |
 |---|---|
@@ -14,7 +25,7 @@ The raw data is synthetic and lives in BigQuery:
 | `projectfeecalcu.main.users` | `id`, `login`, `platform`, `_create_time`, `country` |
 
 - 20,000 orders opened and closed between 2024-12-15 and 2024-12-31
-- 1,000 users on `mt4` / `mt5`, located in 34 European cities
+- 1,000 users on `mt4` / `mt5`, spread across 34 city codes grouped into 3 regions
 - 29 products across `FX`, `XAU`, `XAG`, `Crude`, `Equities`, `Index` and `Cmdty`
 
 ## Project structure
@@ -32,12 +43,13 @@ models/
 │   └── fct_swapfee.sql
 └── docs.md                     shared doc blocks
 seeds/
-├── _seeds.yml
+├── _seeds.yml                  seed docs and tests
 ├── country_region.csv          country code → city → region
 └── product_category.csv        product → category
 tests/
 ├── assert_eod_count_within_holding_days.sql
 └── assert_order_category_matches_product.sql
+packages.yml                    dbt_utils
 ```
 
 ## Lineage
@@ -74,7 +86,7 @@ flowchart LR
 
 | fee_type | Rule |
 |---|---|
-| `admin` | User's country is in `Muslim_Majority_Europe` (swap-free account) |
+| `admin` | User's country is in `Muslim_Majority_Europe` (treated as a swap-free account) |
 | `swap` | All other regions |
 
 ## Testing
@@ -87,6 +99,8 @@ flowchart LR
 | Singular tests | `tests/` | `eod_count` within holding days; order category matches the product seed |
 
 ## Getting started
+
+The source tables are not public and the data generator is not in this repo, so running the project requires loading equivalent `orders` and `users` tables into your own BigQuery dataset and pointing `_src_trading.yml` at it.
 
 1. Add a BigQuery service-account profile named `dataSolutionDemo` to `~/.dbt/profiles.yml`:
 
@@ -102,7 +116,7 @@ flowchart LR
          keyfile: /path/to/keyfile.json
    ```
 
-   The service account needs **BigQuery Job User** and **BigQuery Data Editor**.
+   The service account needs permission to run query jobs and to read and write datasets (for example **BigQuery Job User** and **BigQuery Data Editor**).
 
 2. Install packages, then build seeds, models and tests:
 
