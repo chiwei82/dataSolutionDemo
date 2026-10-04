@@ -1,0 +1,77 @@
+name: dbt CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dbt-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  DBT_VERSION: 2.0.6
+
+jobs:
+  deploy-prod:
+    name: dbt build (prod) and docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dbt Fusion
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update --version "$DBT_VERSION"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure dbt profile
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          keyfile="$RUNNER_TEMP/gcp_key.json"
+          printf '%s' "$GCP_SA_KEY" > "$keyfile"
+          echo "GCP_KEYFILE_PATH=$keyfile" >> "$GITHUB_ENV"
+          echo "DBT_PROFILES_DIR=$GITHUB_WORKSPACE/ci" >> "$GITHUB_ENV"
+
+      - name: Install packages
+        run: dbt deps
+
+      - name: Build and test
+        run: dbt build --target prod
+
+      - name: Generate docs
+        run: dbt docs generate --target prod
+
+      - name: Assemble docs site
+        run: |
+          mkdir -p site/info_schema
+          cp target/index.html site/
+          cp -R target/assets site/
+          cp -R target/info_schema/v1 site/info_schema/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publish-docs:
+    name: Publish docs to GitHub Pages
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

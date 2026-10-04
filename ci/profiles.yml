@@ -1,0 +1,18 @@
+dataSolutionDemo:
+  target: ci
+  outputs:
+    ci:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT', 'projectfeecalcu') }}"
+      dataset: "{{ env_var('DBT_CI_DATASET', 'dbt_ci') }}"
+      keyfile: "{{ env_var('GCP_KEYFILE_PATH') }}"
+      threads: 4
+
+    prod:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT', 'projectfeecalcu') }}"
+      dataset: "{{ env_var('DBT_PROD_DATASET', 'dbt_prod') }}"
+      keyfile: "{{ env_var('GCP_KEYFILE_PATH') }}"
+      threads: 4

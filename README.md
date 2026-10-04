@@ -1,8 +1,13 @@
 # Swap Fee Data Product (dbt + BigQuery)
 
+[![dbt CI](https://github.com/chiwei82/dataSolutionDemo/actions/workflows/ci.yml/badge.svg)](https://github.com/chiwei82/dataSolutionDemo/actions/workflows/ci.yml)
+[![dbt CD](https://github.com/chiwei82/dataSolutionDemo/actions/workflows/cd.yml/badge.svg)](https://github.com/chiwei82/dataSolutionDemo/actions/workflows/cd.yml)
+
+**Live dbt docs:** https://chiwei82.github.io/dataSolutionDemo/
+
 A personal analytics engineering project, modelled on a broker's finance use case and built on synthetic data. It turns raw trading data into a tested, documented data product that answers two questions for every order: **how many end-of-day (EOD) rollovers the position was held through**, and **whether it is charged a swap fee or an admin fee** (swap-free accounts).
 
-**Tech stack:** SQL · dbt (Fusion 2.0) · Google BigQuery (GCP) · dbt_utils · Git / GitHub · Python (synthetic data generation, not included in this repo)
+**Tech stack:** SQL · dbt (Fusion 2.0) · Google BigQuery (GCP) · dbt_utils · Git / GitHub · GitHub Actions (CI/CD) · Python (synthetic data generation, not included in this repo)
 
 ## The problem
 
@@ -13,6 +18,7 @@ Overnight fees depend on trading-calendar rules that are easy to get wrong in ad
 - **Data modelling:** layered staging → marts architecture with a fact table (`fct_swapfee`) and a dimension table (`dim_users`) on a cloud data warehouse, built over **20,000 synthetic orders** and **1,000 synthetic users** across **29 products** and **34 cities**.
 - **Automated testing and data quality:** **36 data tests and 1 unit test** in total (generic, `dbt_utils`, singular SQL and unit tests), covering primary keys, referential integrity, accepted values and the EOD business rules. `dbt build` runs the full pipeline and every test in under a minute.
 - **Business logic as code:** the EOD calendar rules (weekends, Christmas, same-day orders) are pinned down by a unit test with hand-built edge cases, so a logic change that breaks them makes `dbt build` fail before `fct_swapfee` is rebuilt.
+- **CI/CD:** GitHub Actions builds and tests every pull request in an isolated BigQuery `dbt_ci` dataset; merges to `main` deploy to a `dbt_prod` dataset and publish the dbt docs site to GitHub Pages.
 - **Documentation and maintainability:** every model, column and seed is documented; shared definitions live in reusable doc blocks; reference data (country → region, product → category) is managed as dbt seeds instead of being hard-coded in SQL.
 
 ## Data
@@ -50,6 +56,11 @@ tests/
 ├── assert_eod_count_within_holding_days.sql
 └── assert_order_category_matches_product.sql
 packages.yml                    dbt_utils
+ci/
+└── profiles.yml                ci and prod targets for GitHub Actions
+.github/workflows/
+├── ci.yml                      pull request: dbt build in dbt_ci
+└── cd.yml                      push to main: dbt build in dbt_prod, publish docs
 ```
 
 ## Lineage
@@ -97,6 +108,23 @@ flowchart LR
 | Package tests | `_marts.yml` | `dbt_utils.expression_is_true` (`closed_at > opened_at`) |
 | Unit test | `_marts.yml` | `eod_count` over weekends, Christmas and same-day orders; `fee_type` by region |
 | Singular tests | `tests/` | `eod_count` within holding days; order category matches the product seed |
+
+## CI/CD
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Pull request to `main` | Installs dbt Fusion, runs `dbt deps` and `dbt build --target ci` against the `dbt_ci` dataset |
+| [`cd.yml`](.github/workflows/cd.yml) | Push to `main` | Runs `dbt build --target prod` against the `dbt_prod` dataset, then `dbt docs generate` and publishes the site to GitHub Pages |
+
+Environments are separate BigQuery datasets in the same project:
+
+| Dataset | Used by |
+|---|---|
+| `dbt_dev` | Local development |
+| `dbt_ci` | Pull request checks |
+| `dbt_prod` | `main` branch deployments |
+
+Both workflows read the service-account key from the `GCP_SA_KEY` repository secret and use the profile in [`ci/profiles.yml`](ci/profiles.yml), which contains no credentials.
 
 ## Getting started
 
