@@ -8,3 +8,4 @@ dbt_internal_packages/
 *keys/
 .synthetic_trading/
 .DS*
+.user.yml
