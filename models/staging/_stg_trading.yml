@@ -1,11 +1,14 @@
 models:
   - name: stg_order
+    description: One row per trading order, cleaned from the raw `trading.orders` source.
     columns:
       - name: order_id
+        description: Primary key of the order.
         data_tests:
           - unique
           - not_null
       - name: user_id
+        description: The user who placed the order.
         data_tests:
           - not_null
           - relationships:
@@ -13,6 +16,7 @@ models:
                 to: ref('stg_user')
                 field: user_id
       - name: product
+        description: '{{ doc("product") }}'
         data_tests:
           - not_null
           - relationships:
@@ -20,34 +24,43 @@ models:
                 to: ref('product_category')
                 field: product
       - name: category
+        description: '{{ doc("category") }}'
         data_tests:
           - accepted_values:
               arguments:
                 values: ['FX', 'XAU', 'XAG', 'Crude', 'Equities', 'Index', 'Cmdty']
       - name: opened_at
+        description: Time the position was opened (UTC).
         data_tests:
           - not_null
       - name: closed_at
+        description: Time the position was closed (UTC).
         data_tests:
           - not_null
       - name: _etl_loaded_at
+        description: Time the row was loaded into the warehouse.
 
   - name: stg_user
+    description: One row per trading account, cleaned from the raw `trading.users` source.
     columns:
       - name: user_id
+        description: Primary key of the user.
         data_tests:
           - unique
           - not_null
       - name: login
+        description: Trading platform login number.
         data_tests:
           - unique
           - not_null
       - name: platform
+        description: Trading platform of the account.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['mt4', 'mt5']
       - name: country_code
+        description: Code of the user's country.
         data_tests:
           - not_null
           - relationships:
@@ -55,3 +68,4 @@ models:
                 to: ref('country_region')
                 field: country_code
       - name: created_at
+        description: Time the account was created (UTC).
